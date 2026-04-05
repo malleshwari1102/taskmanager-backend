@@ -1,75 +1,44 @@
- package com.example.taskmanager.service;
+package com.example.taskmanager.service;
 
 import com.example.taskmanager.model.Task;
 import com.example.taskmanager.repository.TaskRepository;
-import com.example.taskmanager.exception.TaskNotFoundException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
+import org.springframework.stereotype.Service;
 
 @Service
 public class TaskService {
 
-    private final TaskRepository taskRepository;
+    @Autowired
+    private TaskRepository repo;
 
-    // Constructor Injection
-    public TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    public Page<Task> getTasks(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return repo.findAll(pageable);
     }
 
-    // 🔍 Search
-    public List<Task> searchTasks(String title) {
-        return taskRepository.findByTitleContainingIgnoreCase(title);
-    }
-
-    // Get all tasks
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
-    }
-
-    // Pagination
-    public Page<Task> getTasks(Pageable pageable) {
-        return taskRepository.findAll(pageable);
-    }
-
-    // Create task
-    public Task createTask(Task task) {
-        return taskRepository.save(task);
-    }
-
-    // Update task
-    public Task updateTask(Long id, Task updatedTask) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
-
-        task.setTitle(updatedTask.getTitle());
-        task.setDescription(updatedTask.getDescription());
-        task.setStatus(updatedTask.getStatus());
-
-        return taskRepository.save(task);
-    }
-
-    // Delete task
-    public void deleteTask(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
-
-        taskRepository.delete(task);
-    }
-
-    // 🔄 Toggle Status (FIXED)
-    public Task toggleStatus(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
-
-        if ("Pending".equals(task.getStatus())) {
-            task.setStatus("Completed");
-        } else {
+    public Task saveTask(Task task) {
+        if (task.getStatus() == null) {
             task.setStatus("Pending");
         }
+        return repo.save(task);
+    }
 
-        return taskRepository.save(task);
+    public void deleteTask(Long id) {
+        repo.deleteById(id);
+    }
+
+    public Task toggleStatus(Long id) {
+        Task task = repo.findById(id).orElseThrow();
+        task.setStatus(task.getStatus().equals("Pending") ? "Completed" : "Pending");
+        return repo.save(task);
+    }
+
+    public Task updateTask(Long id, Task newTask) {
+        Task task = repo.findById(id).orElseThrow();
+        task.setTitle(newTask.getTitle());
+        task.setDescription(newTask.getDescription());
+        return repo.save(task);
     }
 }

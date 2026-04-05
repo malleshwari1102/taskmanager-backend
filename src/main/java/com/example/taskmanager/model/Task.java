@@ -18,19 +18,15 @@ public class Task {
 
     private String status;
 
-    // Default constructor
     public Task() {
     }
 
-    // Parameterized constructor (optional but good)
     public Task(Long id, String title, String description, String status) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
     }
-
-    // Getters and Setters
 
     public Long getId() {
         return id;

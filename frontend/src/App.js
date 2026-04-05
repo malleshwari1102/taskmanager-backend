@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const API = "http://localhost:8082";
+
 function App() {
   const [tasks, setTasks] = useState([]);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -16,130 +17,163 @@ function App() {
 
   const [search, setSearch] = useState("");
 
-  // Fetch Tasks
+  const styles = {
+    container: {
+      maxWidth: "600px",
+      margin: "auto",
+      padding: "20px",
+      fontFamily: "Arial",
+      background: "linear-gradient(to right, #c2e9fb, #a1c4fd)",
+      minHeight: "100vh",
+    },
+    card: {
+      background: "white",
+      padding: "15px",
+      margin: "10px 0",
+      borderRadius: "10px",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    },
+    input: {
+      padding: "8px",
+      margin: "5px",
+      width: "45%",
+    },
+    button: {
+      padding: "8px 12px",
+      margin: "5px",
+      border: "none",
+      backgroundColor: "#4a90e2",
+      color: "white",
+      borderRadius: "5px",
+      cursor: "pointer",
+    },
+  };
+
   const fetchTasks = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:8082/tasks?page=${page}&size=5`
-      );
-      setTasks(res.data.content);
-      setTotalPages(res.data.totalPages);
-    } catch (error) {
-      console.error(error);
-      alert("Backend not running or CORS issue!");
-    }
+    const res = await axios.get(`${API}/tasks`, {
+      params: { page, size: 5 },
+    });
+    setTasks(res.data.content);
+    setTotalPages(res.data.totalPages);
   };
 
   useEffect(() => {
     fetchTasks();
   }, [page]);
 
-  // Add Task
   const addTask = async () => {
-    try {
-      if (!title) return alert("Title required");
+    if (!title) return alert("Title required");
 
-      await axios.post("http://localhost:8082/tasks", {
-        title,
-        description,
-        status: "Pending",
-      });
+    await axios.post(`${API}/tasks`, {
+      title,
+      description,
+      status: "Pending",
+    });
 
-      setTitle("");
-      setDescription("");
-      setPage(0);
-      fetchTasks();
-    } catch (error) {
-      alert("Error adding task");
-    }
+    setTitle("");
+    setDescription("");
+    setPage(0);
+    fetchTasks();
   };
 
-  // Delete
   const deleteTask = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8082/tasks/${id}`);
+    if (window.confirm("Delete?")) {
+      await axios.delete(`${API}/tasks/${id}`);
       fetchTasks();
-    } catch (error) {
-      alert("Error deleting");
     }
   };
 
-  // Toggle
   const toggleStatus = async (id) => {
-    try {
-      await axios.put(`http://localhost:8082/tasks/${id}/toggle`);
-      fetchTasks();
-    } catch (error) {
-      alert("Error updating");
-    }
+    await axios.put(`${API}/tasks/${id}/toggle`);
+    fetchTasks();
   };
 
-  // Update
   const updateTask = async () => {
-    try {
-      if (!editTitle) return alert("Title required");
-
-      await axios.put(`http://localhost:8082/tasks/${editId}`, {
-        title: editTitle,
-        description: editDescription,
-        status: "Pending",
-      });
-
-      setEditId(null);
-      fetchTasks();
-    } catch (error) {
-      alert("Error updating");
-    }
+    await axios.put(`${API}/tasks/${editId}`, {
+      title: editTitle,
+      description: editDescription,
+    });
+    setEditId(null);
+    fetchTasks();
   };
 
   const filteredTasks = tasks.filter(
-    (task) =>
-      task.title.toLowerCase().includes(search.toLowerCase()) ||
-      task.description.toLowerCase().includes(search.toLowerCase())
+    (t) =>
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.description.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div style={{ padding: "30px", maxWidth: "600px", margin: "auto" }}>
-      <h2>Task Manager</h2>
+    <div style={styles.container}>
+      <h1 style={{ textAlign: "center" }}>Task Manager</h1>
 
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <input
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <button onClick={addTask}>Add</button>
+      {/* Add Task */}
+      <div>
+        <input
+          style={styles.input}
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          style={styles.input}
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <button style={styles.button} onClick={addTask}>
+          Add
+        </button>
+      </div>
 
-      <br /><br />
-
+      {/* Search */}
       <input
+        style={{ ...styles.input, width: "95%" }}
         placeholder="Search..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
+      {/* Tasks */}
       {filteredTasks.map((task) => (
-        <div key={task.id}>
+        <div key={task.id} style={styles.card}>
           {editId === task.id ? (
             <>
-              <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-              <input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-              <button onClick={updateTask}>Save</button>
-              <button onClick={() => setEditId(null)}>Cancel</button>
+              <input
+                style={styles.input}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+              <input
+                style={styles.input}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+              <br />
+              <button style={{ ...styles.button, backgroundColor: "green" }} onClick={updateTask}>
+                Save
+              </button>
+              <button style={{ ...styles.button, backgroundColor: "gray" }} onClick={() => setEditId(null)}>
+                Cancel
+              </button>
             </>
           ) : (
             <>
               <h3>{task.title}</h3>
               <p>{task.description}</p>
-              <p>{task.status}</p>
 
-              <button onClick={() => toggleStatus(task.id)}>Toggle</button>
-              <button onClick={() => deleteTask(task.id)}>Delete</button>
+              <p style={{ color: task.status === "Completed" ? "green" : "orange" }}>
+                {task.status}
+              </p>
+
+              <button style={styles.button} onClick={() => toggleStatus(task.id)}>
+                Toggle
+              </button>
+              <button style={{ ...styles.button, backgroundColor: "red" }} onClick={() => deleteTask(task.id)}>
+                Delete
+              </button>
               <button
+                style={{ ...styles.button, backgroundColor: "orange" }}
                 onClick={() => {
                   setEditId(task.id);
                   setEditTitle(task.title);
@@ -153,20 +187,26 @@ function App() {
         </div>
       ))}
 
-      <br />
+      {/* Pagination */}
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <button
+          style={styles.button}
+          disabled={page === 0}
+          onClick={() => setPage(page - 1)}
+        >
+          Prev
+        </button>
 
-      <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-        Prev
-      </button>
+        <span> Page {page + 1} </span>
 
-      <span> Page {page + 1} </span>
-
-      <button
-        disabled={page === totalPages - 1}
-        onClick={() => setPage(page + 1)}
-      >
-        Next
-      </button>
+        <button
+          style={styles.button}
+          disabled={page === totalPages - 1}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
